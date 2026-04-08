@@ -3,14 +3,17 @@ package br.com.zenon.fraud;
 import br.com.zenon.fraud.enums.TransactionType;
 import br.com.zenon.fraud.model.Transaction;
 import br.com.zenon.fraud.model.TransactionCustomer;
+import br.com.zenon.fraud.service.TransactionIngestor;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class Main {
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 
-    static void main() {
+    static void main() throws IOException {
 
         Transaction transaction1 = new Transaction(
                 1, TransactionType.PAYMENT, BigDecimal.valueOf(9839.64),
@@ -26,5 +29,9 @@ public class Main {
 
         LOGGER.info(() -> "Transação 1: " + transaction1);
         LOGGER.info(() -> "Transação 2: " + transaction2);
+
+        List<Transaction> transactions = TransactionIngestor.readTransactions("data/PS_20174392719_1491204439457_log.csv", 10);
+
+        transactions.forEach(IO::println);
     }
 }
