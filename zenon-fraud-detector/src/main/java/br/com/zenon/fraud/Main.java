@@ -7,7 +7,11 @@ import br.com.zenon.fraud.service.TransactionIngestor;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
+
+import static br.com.zenon.fraud.service.FraudAnalyzer.*;
 
 public class Main {
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
@@ -31,10 +35,33 @@ public class Main {
 
         LOGGER.info("----------------------------------------------------------------------------------------------");
 
-        List<Transaction> transactions = TransactionIngestor.readTransactions("data/paysim_with_bad_data.csv", 1000);
+        List<Transaction> transactions = TransactionIngestor.readTransactions("data/PS_20174392719_1491204439457_log.csv", 50_000);
 
         LOGGER.info(() -> "Transactions size: " + transactions.size());
 
         transactions.forEach(transaction -> LOGGER.info(transaction.toString()));
+
+        LOGGER.info("----------------------------------------------------------------------------------------------");
+
+        LOGGER.info(() -> "Total de Fraudes: " + isFraudTrue(transactions));
+        int countFraude = 3;
+        int countSuspeito = 5;
+
+        Set<Transaction> topNByTransaction = topNByTransaction(transactions, countFraude);
+
+        LOGGER.info(() -> "Top " + countFraude + " Fraudes de Maior Valor:");
+        List<BigDecimal> bigDecimalList = getAmounts(topNByTransaction);
+        bigDecimalList.forEach(amount -> LOGGER.info(amount.toPlainString()));
+
+        LOGGER.info(() -> "Top " + countFraude + " Clientes suspeitos:");
+        Set<String> topNByNameOrig = topNSuspectByNameOrig(transactions, countSuspeito);
+        topNByNameOrig.forEach(LOGGER::info);
+
+        LOGGER.info(() -> "Prejuízo Total:");
+        LOGGER.info(() -> totalAmount(transactions).toPlainString());
+
+        LOGGER.info(() -> "Fraudes por Tipo:");
+        Map<TransactionType, Long> transactionTypeLongMap = totalByTransactionType(transactions);
+        transactionTypeLongMap.forEach((type, count) -> LOGGER.info("- %s: %d".formatted(type, count)));
     }
 }
