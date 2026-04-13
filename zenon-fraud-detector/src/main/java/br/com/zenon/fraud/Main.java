@@ -3,12 +3,18 @@ package br.com.zenon.fraud;
 import br.com.zenon.fraud.enums.TransactionType;
 import br.com.zenon.fraud.model.Transaction;
 import br.com.zenon.fraud.model.TransactionCustomer;
+import br.com.zenon.fraud.repositoy.TransactionListRepository;
+import br.com.zenon.fraud.repositoy.TransactionMapRepository;
+import br.com.zenon.fraud.repositoy.TransactionRepository;
 import br.com.zenon.fraud.service.TransactionIngestor;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static br.com.zenon.fraud.service.FraudAnalyzer.*;
@@ -20,7 +26,7 @@ public class Main {
 
         Transaction transaction1 = new Transaction(
                 1, TransactionType.PAYMENT, BigDecimal.valueOf(9839.64),
-                new TransactionCustomer("C1231006815", BigDecimal.valueOf(170136.0), BigDecimal.valueOf(160296.36)),
+                new TransactionCustomer("C1231006816", BigDecimal.valueOf(170136.0), BigDecimal.valueOf(160296.36)),
                 new TransactionCustomer("M1979787155", BigDecimal.valueOf(0.0), BigDecimal.valueOf(0.0)),
                 false, false);
 
@@ -35,7 +41,7 @@ public class Main {
 
         LOGGER.info("----------------------------------------------------------------------------------------------");
 
-        List<Transaction> transactions = TransactionIngestor.readTransactions("data/PS_20174392719_1491204439457_log.csv", 50_000);
+        List<Transaction> transactions = TransactionIngestor.readTransactions("data/PS_20174392719_1491204439457_log.csv", 100_000);
 
         LOGGER.info(() -> "Transactions size: " + transactions.size());
 
@@ -63,5 +69,33 @@ public class Main {
         LOGGER.info(() -> "Fraudes por Tipo:");
         Map<TransactionType, Long> transactionTypeLongMap = totalByTransactionType(transactions);
         transactionTypeLongMap.forEach((type, count) -> LOGGER.info("- %s: %d".formatted(type, count)));
+
+        TransactionRepository transactionRepository;
+        transactionRepository = new TransactionListRepository(transactions);
+
+        Optional<Transaction> transactionByOrigemName = transactionRepository.getTransactionByOrigemName("C1231006815");
+
+        LOGGER.log(Level.INFO, String.format("%s", transactionByOrigemName));
+
+        long startTime = System.nanoTime();
+        transactionByOrigemName = transactionRepository.getTransactionByOrigemName("C1868032458");
+        LOGGER.log(Level.INFO, String.format("%s", transactionByOrigemName));
+        long endTime = System.nanoTime();
+
+
+        LOGGER.log(Level.INFO, String.format("%s", TimeUnit.NANOSECONDS.toMillis(endTime - startTime)));
+
+        transactionRepository = new TransactionMapRepository(transactions);
+
+        transactionByOrigemName = transactionRepository.getTransactionByOrigemName("C1231006815");
+
+        LOGGER.log(Level.INFO, String.format("%s", transactionByOrigemName));
+
+        startTime = System.nanoTime();
+        transactionByOrigemName = transactionRepository.getTransactionByOrigemName("C1868032458");
+        LOGGER.log(Level.INFO, String.format("%s", transactionByOrigemName));
+        endTime = System.nanoTime();
+
+        LOGGER.log(Level.INFO, String.format("%s", TimeUnit.NANOSECONDS.toMillis(endTime - startTime)));
     }
 }
