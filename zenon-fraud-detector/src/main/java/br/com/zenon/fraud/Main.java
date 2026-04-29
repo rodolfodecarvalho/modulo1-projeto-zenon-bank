@@ -73,12 +73,12 @@ public class Main {
         TransactionRepository transactionRepository;
         transactionRepository = new TransactionListRepository(transactions);
 
-        Optional<Transaction> transactionByOrigemName = transactionRepository.getTransactionByOrigemName("C1231006815");
+        Optional<Transaction> transactionByOrigemName = transactionRepository.findByOriginName("C1231006815");
 
         LOGGER.log(Level.INFO, String.format("%s", transactionByOrigemName));
 
         long startTime = System.nanoTime();
-        transactionByOrigemName = transactionRepository.getTransactionByOrigemName("C1868032458");
+        transactionByOrigemName = transactionRepository.findByOriginName("C1868032458");
         LOGGER.log(Level.INFO, String.format("%s", transactionByOrigemName));
         long endTime = System.nanoTime();
 
@@ -87,12 +87,12 @@ public class Main {
 
         transactionRepository = new TransactionMapRepository(transactions);
 
-        transactionByOrigemName = transactionRepository.getTransactionByOrigemName("C1231006815");
+        transactionByOrigemName = transactionRepository.findByOriginName("C1231006815");
 
         LOGGER.log(Level.INFO, String.format("%s", transactionByOrigemName));
 
         startTime = System.nanoTime();
-        transactionByOrigemName = transactionRepository.getTransactionByOrigemName("C1868032458");
+        transactionByOrigemName = transactionRepository.findByOriginName("C1868032458");
         LOGGER.log(Level.INFO, String.format("%s", transactionByOrigemName));
         endTime = System.nanoTime();
 
