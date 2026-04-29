@@ -1,0 +1,13 @@
+services:
+  db.zenon.frauds:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: zenon_fraude
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql.zenon.frauds:/var/lib/mysql
+volumes:
+  mysql.zenon.frauds:
