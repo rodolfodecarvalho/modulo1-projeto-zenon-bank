@@ -37,6 +37,21 @@ public class TransactionIngestor {
         }
     }
 
+    public static List<Transaction> readTransactions(final String path) {
+        try (Stream<String> lines = Files.lines(Paths.get(path))) {
+
+            return lines
+                    .skip(1)
+                    .filter(line -> !line.isBlank())
+                    .map(TransactionIngestor::mapLineToTransaction)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .toList();
+        } catch (Exception ex) {
+            throw new TransactionException(String.format("Erro ao ler o arquivo: %s", path), ex);
+        }
+    }
+
     private static Optional<Transaction> mapLineToTransaction(final String line) {
         String[] fields = line.split(",");
 

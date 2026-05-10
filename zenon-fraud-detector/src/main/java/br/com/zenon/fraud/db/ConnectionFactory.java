@@ -12,9 +12,8 @@ public class ConnectionFactory {
     }
 
     public static Connection getConnection() {
-
         try {
-            return DriverManager.getConnection("jdbc:mysql://localhost:3306/zenon_fraude", System.getenv("MYSQL_ROOT_USER"), System.getenv("MYSQL_ROOT_PASSWORD"));
+            return DriverManager.getConnection("jdbc:mysql://localhost:3306/zenon_fraude?rewriteBatchedStatements=true", System.getenv("MYSQL_ROOT_USER"), System.getenv("MYSQL_ROOT_PASSWORD"));
         } catch (SQLException e) {
             throw new TransactionException("Erro ao conectar com o Banco de Dados", e);
         }

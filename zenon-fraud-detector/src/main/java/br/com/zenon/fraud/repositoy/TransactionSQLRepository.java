@@ -11,10 +11,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 
 public class TransactionSQLRepository implements TransactionRepository {
 
@@ -87,46 +90,87 @@ public class TransactionSQLRepository implements TransactionRepository {
     public void saveAll(List<Transaction> transactions) {
         String sql = """
                 insert into transactions
-                (step, `type`, amount, name_origin , old_balance_origin , new_balance_origin, name_recipient , old_balance_recipient , new_balance_recipient , is_fraud , is_flagged_fraud  )
+                (step, `type`, amount, name_origin , old_balance_origin , new_balance_origin,
+                 name_recipient , old_balance_recipient , new_balance_recipient , is_fraud , is_flagged_fraud)
                 values (?,?,?,?,?,?,?,?,?,?,?);
                 """;
 
-        try (var executor = newVirtualThreadPerTaskExecutor()) {
+        var semaphore = new Semaphore(10);
 
-            executor.submit(() -> {
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 
-                try (Connection conn = ConnectionFactory.getConnection();
-                     PreparedStatement ps = conn.prepareStatement(sql)) {
+            List<Future<?>> futures = new ArrayList<>();
 
-                    conn.setAutoCommit(false);
+            int chunkSize = 1000;
 
-                    for (Transaction transaction : transactions) {
-                        ps.setInt(1, transaction.step());
-                        ps.setString(2, transaction.type().name());
-                        ps.setBigDecimal(3, transaction.amount());
+            for (int i = 0; i < transactions.size(); i += chunkSize) {
 
-                        ps.setString(4, transaction.origin().name());
-                        ps.setBigDecimal(5, transaction.origin().oldBalance());
-                        ps.setBigDecimal(6, transaction.origin().newBalance());
+                List<Transaction> chunk = transactions.subList(i, Math.min(i + chunkSize, transactions.size()));
 
-                        ps.setString(7, transaction.destination().name());
-                        ps.setBigDecimal(8, transaction.destination().oldBalance());
-                        ps.setBigDecimal(9, transaction.destination().newBalance());
+                futures.add(executor.submit(() -> {
+                    try {
+                        semaphore.acquire();
 
-                        ps.setBoolean(10, transaction.isFraud());
-                        ps.setBoolean(11, transaction.isFlaggedFraud());
-
-                        ps.addBatch();
+                        saveChunk(chunk, sql);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new TransactionException("Thread interrompida", e);
+                    } finally {
+                        semaphore.release();
                     }
+                }));
+            }
 
+            for (var future : futures) {
+                try {
+                    future.get();
+                } catch (ExecutionException e) {
+                    throw new TransactionException("Erro na thread", e.getCause());
+                }
+            }
+        } catch (Exception e) {
+            throw new TransactionException("Erro ao executar virtual threads", e);
+        }
+    }
+
+    private void saveChunk(List<Transaction> transactions, String sql) {
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            conn.setAutoCommit(false);
+
+            int count = 0;
+
+            for (Transaction transaction : transactions) {
+
+                ps.setInt(1, transaction.step());
+                ps.setString(2, transaction.type().name());
+                ps.setBigDecimal(3, transaction.amount());
+
+                ps.setString(4, transaction.origin().name());
+                ps.setBigDecimal(5, transaction.origin().oldBalance());
+                ps.setBigDecimal(6, transaction.origin().newBalance());
+
+                ps.setString(7, transaction.destination().name());
+                ps.setBigDecimal(8, transaction.destination().oldBalance());
+                ps.setBigDecimal(9, transaction.destination().newBalance());
+
+                ps.setBoolean(10, transaction.isFraud());
+                ps.setBoolean(11, transaction.isFlaggedFraud());
+
+                ps.addBatch();
+                count++;
+
+                if (count % 10000 == 0) {
                     ps.executeBatch();
                     conn.commit();
-                } catch (Exception e) {
-                    throw new TransactionException("Erro ao salvar batch de transações", e);
                 }
-            }).get();
+            }
+
+            ps.executeBatch();
+            conn.commit();
         } catch (Exception e) {
-            throw new TransactionException("Erro ao executar virtual thread", e);
+            throw new TransactionException("Erro ao salvar chunk", e);
         }
     }
 

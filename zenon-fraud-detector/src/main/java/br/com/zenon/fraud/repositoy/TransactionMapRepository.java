@@ -14,10 +14,10 @@ public class TransactionMapRepository implements TransactionRepository {
 
     public TransactionMapRepository(List<Transaction> transactions) {
         this.transactionByOrigiName = transactions.stream()
-                                                  .collect(Collectors.toMap(
-                                                          transaction -> transaction.origin().name(),
-                                                          Function.identity()
-                                                  ));
+                .collect(Collectors.toMap(
+                        transaction -> transaction.origin().name(),
+                        Function.identity()
+                ));
     }
 
     @Override

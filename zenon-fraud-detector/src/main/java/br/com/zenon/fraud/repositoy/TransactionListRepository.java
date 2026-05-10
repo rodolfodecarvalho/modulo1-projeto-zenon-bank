@@ -17,9 +17,9 @@ public class TransactionListRepository implements TransactionRepository {
     @Override
     public Optional<Transaction> findByOriginName(String originName) {
         return Optional.of(transactions.stream()
-                                       .filter(t -> t.origin().name().equals(originName))
-                                       .findFirst()
-                                       .orElseThrow(() -> new IllegalArgumentException("Transação não encontrada para o cliente " + originName)));
+                .filter(t -> t.origin().name().equals(originName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Transação não encontrada para o cliente " + originName)));
     }
 
     @Override

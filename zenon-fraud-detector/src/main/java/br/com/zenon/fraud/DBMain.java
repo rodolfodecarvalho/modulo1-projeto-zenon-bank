@@ -25,16 +25,10 @@ public class DBMain {
         long endTimeSQL = System.nanoTime();
         IO.println("Tempo de inserção Um por um - SQL (ms): " + (endTimeSQL - startTimeSQL) / 1_000_000.0);
 
-        startTimeSQL = System.nanoTime();
-        IO.println("Iniciando adicao das transacoes no BD em Batch...");
-        repository.saveAll(transactions);
-        endTimeSQL = System.nanoTime();
-        IO.println("Tempo de inserção Batch - SQL (ms): " + (endTimeSQL - startTimeSQL) / 1_000_000.0);
-
         repository.findByOriginName("C1231006815")
-                  .ifPresentOrElse(IO::println, () -> IO.println("Transacao nao encontrada para: C1231006815"));
+                .ifPresentOrElse(IO::println, () -> IO.println("Transacao nao encontrada para: C1231006815"));
 
         repository.findByOriginName("C123100681556")
-                  .ifPresentOrElse(IO::println, () -> IO.println("Transacao nao encontrada para: C123100681556"));
+                .ifPresentOrElse(IO::println, () -> IO.println("Transacao nao encontrada para: C123100681556"));
     }
 }
